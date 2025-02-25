@@ -1,6 +1,7 @@
 [package]
 name = "news"
 version = "0.1.0"
+authors = ["Adelaide あで Fisher"]
 edition = "2021"
 
 [lib]
@@ -16,6 +17,7 @@ leptos_meta = { version = "0.7.0" }
 tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
 wasm-bindgen = { version = "=0.2.100", optional = true }
 reactive_stores = "0.1.7"
+sqlx = { version = "0.8", features = [ "runtime-tokio", "tls-rustls-aws-lc-rs" ] }
 
 [features]
 hydrate = [
