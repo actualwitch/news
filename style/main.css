@@ -1,0 +1,105 @@
+body {
+  font-family: system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", "Noto Color Emoji";
+  text-align: center;
+  max-width: 80ch;
+  margin: 1ch auto;
+}
+
+body > header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 24px;
+  border-right: 4px solid green;
+}
+
+.lambda-icon {
+  height: 32px;
+  width: 32px;
+  background: radial-gradient(
+    circle at 10% 10% in hsl,
+    limegreen 0,
+    green 100%
+  );
+  border: 1px solid transparent;
+  border-image: radial-gradient(
+      circle at 15% 15% in hsl,
+      #a9e1a9 0,
+      #468e46 100%
+    )
+    1;
+  color: white;
+  display: grid;
+  place-items: center;
+  font-family: Verdana, Geneva, sans-serif;
+  font-size: 12px;
+  font-size: 24px;
+}
+
+/* 1. Use a more-intuitive box-sizing model */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* 2. Remove default margin */
+* {
+  margin: 0;
+}
+
+/* 5. Improve media defaults */
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* 6. Inherit fonts for form controls */
+input,
+button,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+/* 7. Avoid text overflows */
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: break-word;
+}
+
+/* 8. Improve line wrapping */
+p {
+  text-wrap: pretty;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  text-wrap: balance;
+}
+
+/*
+  9. Create a root stacking context
+*/
+#root,
+#__next {
+  isolation: isolate;
+}
+
+select {
+  appearance: none;
+}
