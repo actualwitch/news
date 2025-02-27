@@ -1,0 +1,20 @@
+name: Lint
+on: [push, pull_request]
+jobs:
+  cargo-deny:
+    name: cargo-deny
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: EmbarkStudios/cargo-deny-action@v2
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+        - uses: actions/checkout@v3
+        - uses: dtolnay/rust-toolchain@nightly
+          with:
+              components: clippy
+        - uses: auguwu/clippy-action@1.4.0
+          with:
+              token: ${{secrets.GITHUB_TOKEN}}
