@@ -1,26 +1,13 @@
-use chrono::{DateTime, FixedOffset, Local};
+
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes, A},
     StaticSegment,
 };
-use serde::{Deserialize, Serialize};
-use typed_builder::TypedBuilder;
 use url::Url;
 
-#[derive(Clone, Serialize, Deserialize, TypedBuilder)]
-pub struct Story {
-    pub id: u16,
-    pub title: String,
-    #[builder(default, setter(strip_option))]
-    pub text: Option<String>,
-    #[builder(default, setter(strip_option))]
-    pub url: Option<Url>,
-    pub created_at: DateTime<FixedOffset>,
-    #[builder(default, setter(strip_option))]
-    pub updated_at: Option<DateTime<FixedOffset>>,
-}
+use crate::model::Story;
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -81,7 +68,7 @@ fn HomePage() -> impl IntoView {
             .unwrap_or_default()
     };
     view! {
-        <Suspense fallback=move || view! { <p>"Loading posts..."</p> }>
+        <Suspense fallback=|| view! { <p>"Loading posts..."</p> }>
             <ol>
                 <For each=posts key=|story| story.id let:story>
                     <StoryLink story />
@@ -102,10 +89,10 @@ fn StoryLink(story: Story) -> impl IntoView {
     view! {
         <li>
             <p>
-                <A href=url.clone()>{story.title.clone()}</A>
+                <A href=url>{story.title}</A>
                 {domain.is_some().then(|| {view! {
                     <span>" → "</span>
-                    <A href=format! ("/by-domain/{:?}", domain)>{domain}</A>
+                    <A href=format! ("/by-domain/{}", domain.clone().unwrap())>{domain}</A>
                 }})}
             </p>
         </li>
@@ -114,7 +101,7 @@ fn StoryLink(story: Story) -> impl IntoView {
 
 #[server]
 pub async fn get_news() -> Result<Vec<Story>, ServerFnError> {
-    let timestamp = Local::now();
+    let timestamp = chrono::Local::now();
     Ok(vec![
         Story::builder()
             .id(0)

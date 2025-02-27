@@ -1,5 +1,6 @@
 #![feature(try_blocks)]
 pub mod app;
+pub mod model;
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]
