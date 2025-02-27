@@ -7,6 +7,10 @@ async fn main() {
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use news::app::*;
+    use sqlx::PgPool;
+
+    // let database_url = std::option_env!("DATABASE_URL").expect("Missing DATABASE_URL.");
+    // let pool = PgPool::connect(database_url).await?;
 
     let conf = get_configuration(None).unwrap();
     let addr = conf.leptos_options.site_addr;

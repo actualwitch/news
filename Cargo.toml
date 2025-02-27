@@ -17,7 +17,7 @@ leptos_meta = { version = "0.7.0" }
 tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
 wasm-bindgen = { version = "=0.2.100", optional = true }
 reactive_stores = "0.1.7"
-sqlx = { version = "0.8", features = [ "runtime-tokio", "tls-rustls-aws-lc-rs" ], optional = true }
+sqlx = { version = "0.8", features = [ "postgres", "runtime-tokio", "tls-rustls-aws-lc-rs" ], optional = true }
 chrono = { version = "0.4.39", features = [ "serde" ]}
 serde = "1.0.218"
 url = { version = "2.5.4", features = [ "serde" ]}

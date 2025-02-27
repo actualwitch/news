@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: valkey
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: valkey
+  template:
+    metadata:
+      labels:
+        app: valkey
+    spec:
+      containers:
+        - name: valkey
+          image: 'valkey/valkey:latest'
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: valkey-config
+              mountPath: /etc/valkey/valkey.yaml
+              subPath: valkey.yaml
+            - name: valkey-data
+              mountPath: /valkey
+      volumes:
+        - name: valkey-config
+          configMap:
+            name: valkey-config
+        - name: valkey-data
+          emptyDir: {}
