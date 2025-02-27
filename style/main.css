@@ -1,45 +1,4 @@
-body {
-  font-family: system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
-    "Segoe UI Symbol", "Noto Color Emoji";
-  text-align: center;
-  max-width: 80ch;
-  margin: 0 auto;
-  padding: 1ch;
-}
-
-body > header {
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 24px;
-  border-right: 4px solid green;
-}
-
-.lambda-icon {
-  height: 32px;
-  width: 32px;
-  background: radial-gradient(
-    circle at 10% 10% in hsl,
-    limegreen 0,
-    green 100%
-  );
-  border: 1px solid transparent;
-  border-image: radial-gradient(
-      circle at 15% 15% in hsl,
-      #a9e1a9 0,
-      #468e46 100%
-    )
-    1;
-  color: white;
-  display: grid;
-  place-items: center;
-  font-family: Verdana, Geneva, sans-serif;
-  font-weight: initial;
-  font-size: 12px;
-  font-size: 24px;
-}
-
+/* Reset */
 /* 1. Use a more-intuitive box-sizing model */
 *,
 *::before,
@@ -105,4 +64,57 @@ h6 {
 
 select {
   appearance: none;
+}
+
+/* App styles */
+
+body {
+  font-family: system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", "Noto Color Emoji";
+  max-width: 120ch;
+  margin: 0 auto;
+  padding: 1ch;
+}
+
+body > header {
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 24px;
+  border-right: 4px solid green;
+
+  margin-bottom: 16px;
+}
+
+.lambda-icon {
+  height: 32px;
+  width: 32px;
+  background: radial-gradient(
+    circle at 10% 10% in hsl,
+    limegreen 0,
+    green 100%
+  );
+  border: 1px solid transparent;
+  border-image: radial-gradient(
+      circle at 15% 15% in hsl,
+      #a9e1a9 0,
+      #468e46 100%
+    )
+    1;
+  color: white;
+  display: grid;
+  place-items: center;
+  font-family: Verdana, Geneva, sans-serif;
+  font-weight: initial;
+  font-size: 12px;
+  font-size: 24px;
+}
+
+li + li {
+  margin-top: 8px;
+}
+
+ol {
+  list-style: decimal-leading-zero;
 }
