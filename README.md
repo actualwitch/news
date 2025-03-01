@@ -15,7 +15,7 @@ tilt up
 ## Roadmap
 
 - [ ] Read-only links with imaginary discussions
-- [ ] Postgres based data store
+- [x] Postgres based data store
 - [ ] Kubernetes deployment
 - [ ] ActivityPub/RSS read-only feed
 - [ ] ActivityPub interaction support

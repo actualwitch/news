@@ -10,25 +10,31 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 leptos = { version = "0.7.0", features = ["nightly"] }
 leptos_router = { version = "0.7.0", features = ["nightly"] }
-axum = { version = "0.7", optional = true }
-console_error_panic_hook = { version = "0.1", optional = true}
+axum = { version = "0.7", features = ["macros"], optional = true }
+console_error_panic_hook = { version = "0.1", optional = true }
 leptos_axum = { version = "0.7.0", optional = true }
 leptos_meta = { version = "0.7.0" }
 tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
 wasm-bindgen = { version = "=0.2.100", optional = true }
 reactive_stores = "0.1.7"
-sqlx = { version = "0.8", features = [ "postgres", "runtime-tokio", "tls-rustls-aws-lc-rs" ], optional = true }
-chrono = { version = "0.4.39", features = [ "serde" ]}
+sqlx = { version = "0.8", features = [
+    "chrono",
+    "migrate",
+    "postgres",
+    "runtime-tokio",
+    "tls-rustls-aws-lc-rs",
+], optional = true }
+chrono = { version = "0.4.39", features = ["serde"] }
 serde = "1.0.218"
-url = { version = "2.5.4", features = [ "serde" ]}
+url = { version = "2.5.4", features = ["serde"] }
 typed-builder = "0.20.0"
+opentelemetry = "0.28.0"
+opentelemetry_sdk = "0.28.0"
+opentelemetry-stdout = "0.28.0"
+axum-tracing-opentelemetry = "0.26.1"
 
 [features]
-hydrate = [
-    "leptos/hydrate",
-    "dep:console_error_panic_hook",
-    "dep:wasm-bindgen",
-]
+hydrate = ["leptos/hydrate", "dep:console_error_panic_hook", "dep:wasm-bindgen"]
 ssr = [
     "dep:axum",
     "dep:tokio",
@@ -59,7 +65,7 @@ site-root = "target/site"
 site-pkg-dir = "pkg"
 
 # [Optional] The source CSS file. If it ends with .sass or .scss then it will be compiled by dart-sass into CSS. The CSS is optimized by Lightning CSS before being written to <site-root>/<site-pkg>/app.css
-style-file = "style/main.css"
+style-file = "style/main.scss"
 # Assets source dir. All files found here will be copied and synchronized to site-root.
 # The assets-dir cannot have a sub directory with the same name/path as site-pkg-dir.
 #

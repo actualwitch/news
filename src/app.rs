@@ -1,4 +1,4 @@
-
+use crate::{api::*, model::Story};
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
@@ -6,7 +6,6 @@ use leptos_router::{
     StaticSegment,
 };
 use url::Url;
-use crate::model::Story;
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -29,27 +28,21 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
 
 #[component]
 pub fn App() -> impl IntoView {
-    // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
 
     view! {
-        // injects a stylesheet into the document <head>
-        // id=leptos means cargo-leptos will hot-reload this stylesheet
         <Stylesheet id="leptos" href="/pkg/news.css"/>
-
-        // sets the document title
         <Title text="Lambda Function"/>
-
-        <header>
-            <span class="lambda-icon".to_string()>λ</span>
-            <span>Lambda Function</span>
-        </header>
-
-        // content for this welcome page
         <Router>
+            <header>
+                <span class="lambda-home".to_string()><A href="/"><span class="lambda-icon".to_string()>λ</span>Lambda Function</A></span>
+                <span class="spacer".to_string()></span>
+                <A href="/story/create/">"New"</A>
+            </header>
             <main>
                 <Routes fallback=|| "Not found.".into_view()>
                     <Route path=StaticSegment("") view=StoryList/>
+                    <Route path=(StaticSegment("story"), StaticSegment("create")) view=StoryCreate/>
                 </Routes>
             </main>
         </Router>
@@ -77,23 +70,51 @@ fn StoryList() -> impl IntoView {
     }
 }
 
-// #[component]
-// fn StoryDetail(id: i32) -> impl IntoView {
-//     let story = Resource::new(move || id, |id| get_story(id));
-//     let title = story.get().map(|s| s.title.clone()).unwrap_or_default();
-//     view! {
-//         <div>
-//             <h1>{title}</h1>
-//             <p>{story.get().map(|s| s.text.clone()).unwrap_or_default()}</p>
-//         </div>
-//     }
-// }
+#[component]
+fn StoryDetail(id: i32) -> impl IntoView {
+    let story = Resource::new(move || id, |id| get_story(id));
+    let title = story
+        .get()
+        .map(|s| s.expect("expected story").title.clone())
+        .unwrap_or_default();
+    view! {
+        <div>
+            <h1>{title}</h1>
+            <p>{story.get().map(|s| s.expect("expected story").text.clone()).unwrap_or_default()}</p>
+        </div>
+    }
+}
+
+#[component]
+fn StoryCreate() -> impl IntoView {
+    let submit = ServerAction::<CreateStory>::new();
+
+    view! {
+        <ActionForm action=submit>
+            <header>New Story</header>
+            <label>
+                <span>Title</span>
+                <input type="text" name="story[title]"/>
+            </label>
+            <label>
+                <span>Text</span>
+                <textarea name="story[text]"></textarea>
+            </label>
+            <label>
+                <span>URL</span>
+                <input type="text" name="story[url]"/>
+            </label>
+            <button type="submit">"Create"</button>
+        </ActionForm>
+    }
+}
 
 #[component]
 fn StoryLink(story: Story) -> impl IntoView {
     let url = format!("/story/{0}/", story.id);
     let domain: Option<String> = try {
         let url = story.url.as_ref()?;
+        let url = Url::parse(url).ok()?;
         let domain = url.domain()?;
         domain.into()
     };
@@ -108,37 +129,4 @@ fn StoryLink(story: Story) -> impl IntoView {
             </p>
         </li>
     }
-}
-
-#[server]
-pub async fn get_stories() -> Result<Vec<Story>, ServerFnError> {
-    let timestamp = chrono::Local::now();
-    Ok(vec![
-        Story::builder()
-            .id(0)
-            .author_id(0)
-            .title("🦀 React is dead 🦀".to_string())
-            .created_at(timestamp.into())
-            .url(Url::parse("https://www.leptos.dev/")?)
-            .build(),
-        Story::builder()
-            .id(1)
-            .author_id(0)
-            .title("Thoughtful post".to_string())
-            .created_at(timestamp.into())
-            .text("It contains thoughts.".to_string())
-            .build(),
-    ])
-}
-
-#[server]
-pub async fn get_story(id: i32) -> Result<Story, ServerFnError> {
-    let timestamp = chrono::Local::now();
-    Ok(Story::builder()
-        .id(id)
-        .author_id(0)
-        .title("🦀 React is dead 🦀".to_string())
-        .created_at(timestamp.into())
-        .url(Url::parse("https://www.leptos.dev/")?)
-        .build())
 }

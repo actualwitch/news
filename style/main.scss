@@ -85,6 +85,39 @@ body > header {
   border-right: 4px solid green;
 
   margin-bottom: 16px;
+  padding-right: 8px;
+}
+
+body > header > a {
+  font-size: 16px;
+}
+
+a {
+  color: green;
+  transition: color 0.1s linear;
+  &:visited {
+    color: darkgreen;
+  }
+  &:hover, &:active {
+    color: limegreen;
+  }
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+}
+
+.lambda-home > a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: black;
+  &:hover {
+    text-decoration: underline;
+    color: limegreen;
+  }
 }
 
 .lambda-icon {
@@ -117,4 +150,12 @@ li + li {
 
 ol {
   list-style: decimal-leading-zero;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.non-interactive {
+  user-select: none;
 }
