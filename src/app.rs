@@ -1,9 +1,13 @@
-use crate::{api::*, model::Story};
+use crate::{
+    api::*,
+    model::{ApiError, Story, StoryGetArgs},
+};
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes, A},
-    StaticSegment,
+    hooks::use_params,
+    ParamSegment, StaticSegment,
 };
 use url::Url;
 
@@ -12,15 +16,15 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
         <!DOCTYPE html>
         <html lang="en">
             <head>
-                <meta charset="utf-8"/>
-                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <meta charset="utf-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1" />
                 <link rel="icon" type="image/png" href="/favicon.png" />
                 <AutoReload options=options.clone() />
-                <HydrationScripts options/>
-                <MetaTags/>
+                <HydrationScripts options />
+                <MetaTags />
             </head>
             <body>
-                <App/>
+                <App />
             </body>
         </html>
     }
@@ -31,18 +35,27 @@ pub fn App() -> impl IntoView {
     provide_meta_context();
 
     view! {
-        <Stylesheet id="leptos" href="/pkg/news.css"/>
-        <Title text="Lambda Function"/>
+        <Stylesheet id="leptos" href="/pkg/news.css" />
+        <Title text="Lambda Function" />
         <Router>
             <header>
-                <span class="lambda-home".to_string()><A href="/"><span class="lambda-icon".to_string()>λ</span>Lambda Function</A></span>
+                <span class="lambda-home".to_string()>
+                    <A href="/">
+                        <span class="lambda-icon".to_string()>λ</span>
+                        Lambda Function
+                    </A>
+                </span>
                 <span class="spacer".to_string()></span>
                 <A href="/story/create/">"New"</A>
             </header>
             <main>
                 <Routes fallback=|| "Not found.".into_view()>
-                    <Route path=StaticSegment("") view=StoryList/>
-                    <Route path=(StaticSegment("story"), StaticSegment("create")) view=StoryCreate/>
+                    <Route path=StaticSegment("") view=StoryList />
+                    <Route
+                        path=(StaticSegment("story"), StaticSegment("create"))
+                        view=StoryCreate
+                    />
+                    <Route path=(StaticSegment("story"), ParamSegment("id")) view=StoryDetail />
                 </Routes>
             </main>
         </Router>
@@ -71,30 +84,39 @@ fn StoryList() -> impl IntoView {
 }
 
 #[component]
-fn StoryDetail(id: i32) -> impl IntoView {
-    let story = Resource::new(move || id, |id| get_story(id));
-    let title = story
-        .get()
-        .map(|s| s.expect("expected story").title.clone())
-        .unwrap_or_default();
+fn StoryDetail() -> impl IntoView {
+    let query = use_params::<StoryGetArgs>();
+    let id = move || query.with(|q| q.as_ref().map(|q| q.id).map_err(|_| ApiError::InvalidData));
+    let story = Resource::new(id, |id| async move {
+        match id {
+            Err(e) => Err(e),
+            Ok(id) => story_get(id).await.map_err(|_| ApiError::NotFound),
+        }
+    });
+    // if (story_foo.is_none()) {
+    //     return view! { <p>"Story not found."</p> };
+    // }
+    // let title = move || {
+    //     story.get()
+    // };
     view! {
-        <div>
-            <h1>{title}</h1>
-            <p>{story.get().map(|s| s.expect("expected story").text.clone()).unwrap_or_default()}</p>
-        </div>
+        <Suspense fallback=|| view! { <p>"Loading stories..."</p> }>
+            <h2>{move || story.get().map(|s| s.unwrap().title.clone()).unwrap_or_default()}</h2>
+            <p></p>
+        </Suspense>
     }
 }
 
 #[component]
 fn StoryCreate() -> impl IntoView {
-    let submit = ServerAction::<CreateStory>::new();
+    let submit = ServerAction::<StoryCreate>::new();
 
     view! {
         <ActionForm action=submit>
             <header>New Story</header>
             <label>
                 <span>Title</span>
-                <input type="text" name="story[title]"/>
+                <input type="text" name="story[title]" />
             </label>
             <label>
                 <span>Text</span>
@@ -102,7 +124,7 @@ fn StoryCreate() -> impl IntoView {
             </label>
             <label>
                 <span>URL</span>
-                <input type="text" name="story[url]"/>
+                <input type="text" name="story[url]" />
             </label>
             <button type="submit">"Create"</button>
         </ActionForm>
@@ -122,10 +144,14 @@ fn StoryLink(story: Story) -> impl IntoView {
         <li>
             <p>
                 <A href=url>{story.title}</A>
-                {domain.is_some().then(|| {view! {
-                    <span>" → "</span>
-                    <A href=format! ("/by-domain/{}", domain.clone().unwrap())>{domain}</A>
-                }})}
+                {domain
+                    .is_some()
+                    .then(|| {
+                        view! {
+                            <span>" → "</span>
+                            <A href=format!("/by-domain/{}", domain.clone().unwrap())>{domain}</A>
+                        }
+                    })}
             </p>
         </li>
     }

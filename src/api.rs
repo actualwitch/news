@@ -26,7 +26,7 @@ pub async fn get_stories() -> Result<Vec<Story>, ServerFnError> {
 }
 
 #[server]
-pub async fn create_story(story: StoryCreateArgs) -> Result<Story, ServerFnError> {
+pub async fn story_create(story: StoryCreateArgs) -> Result<Story, ServerFnError> {
     use self::ssr::pool;
     use chrono::Local;
     use sqlx::query_as;
@@ -34,15 +34,19 @@ pub async fn create_story(story: StoryCreateArgs) -> Result<Story, ServerFnError
     let pool = pool()?;
     let timestamp = Local::now();
 
-    let story = query_as!(Story, r#"INSERT INTO stories (title, text, url, author_id, created_at) VALUES ($1, $2, $3, $4, $5) RETURNING *"#, story.title, story.text, story.url, 1, timestamp.into())
+    if story.title.is_empty() {
+        return Err(ServerFnError::ServerError("Title is required.".into()));
+    }
+
+    let result = query_as!(Story, r#"INSERT INTO stories (title, text, url, author_id, created_at) VALUES ($1, $2, $3, $4, $5) RETURNING *"#, story.title, story.text, story.url, 1, timestamp.into())
         .fetch_one(&pool)
         .await?;
 
-    Ok(story)
+    Ok(result)
 }
 
 #[server]
-pub async fn get_story(id: i32) -> Result<Story, ServerFnError> {
+pub async fn story_get(id: i32) -> Result<Story, ServerFnError> {
     use self::ssr::pool;
     use sqlx::query_as;
 

@@ -1,7 +1,10 @@
 use chrono::{DateTime, FixedOffset};
+use leptos::Params;
+use leptos_router::params::Params;
 use serde::{Deserialize, Serialize};
 use typed_builder::TypedBuilder;
 use url::Url;
+use thiserror::Error;
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
@@ -16,6 +19,19 @@ pub mod ssr {
         pub pool: PgPool,
         pub routes: Vec<AxumRouteListing>,
     }
+}
+
+
+#[derive(Error, Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ApiError {
+    #[error("Not found.")]
+    NotFound,
+    #[error("Unauthorized.")]
+    Unauthorized,
+    #[error("Internal server error.")]
+    InternalServerError,
+    #[error("Invalid data.")]
+    InvalidData,
 }
 
 #[derive(Clone, Serialize, Deserialize, TypedBuilder, Debug)]
@@ -37,6 +53,11 @@ pub struct StoryCreateArgs {
     pub text: Option<String>,
     #[builder(default, setter(strip_option))]
     pub url: Option<String>,
+}
+
+#[derive(Clone, Serialize, Deserialize, PartialEq, Params, TypedBuilder, Debug)]
+pub struct StoryGetArgs {
+    pub id: i32,
 }
 
 #[derive(Clone, Serialize, Deserialize, TypedBuilder)]
