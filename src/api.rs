@@ -38,6 +38,10 @@ pub async fn story_create(story: StoryCreateArgs) -> Result<Story, ServerFnError
         return Err(ServerFnError::ServerError("Title is required.".into()));
     }
 
+    if story.text.clone().is_none_or(|text| text.is_empty()) && story.url.clone().is_none_or(|url| url.is_empty()) {
+        return Err(ServerFnError::ServerError("Text or URL is required.".into()));
+    }
+
     let result = query_as!(Story, r#"INSERT INTO stories (title, text, url, author_id, created_at) VALUES ($1, $2, $3, $4, $5) RETURNING *"#, story.title, story.text, story.url, 1, timestamp.into())
         .fetch_one(&pool)
         .await?;

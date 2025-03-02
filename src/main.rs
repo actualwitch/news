@@ -5,13 +5,13 @@ async fn main() {
         body::Body as AxumBody,
         extract::{Path, State},
         http::Request,
-        response::IntoResponse,
+        response::{IntoResponse, Response},
         routing::{get, post},
         Router,
     };
     use leptos::logging::log;
     use leptos::prelude::*;
-    use leptos_axum::{generate_route_list, handle_server_fns_with_context, LeptosRoutes};
+    use leptos_axum::{generate_route_list, handle_server_fns_with_context, render_route_with_context, LeptosRoutes};
     use news::app::*;
     use news::model::ssr::AppState;
     use opentelemetry::global::ObjectSafeSpan;
@@ -21,17 +21,6 @@ async fn main() {
     use opentelemetry_sdk::trace::SdkTracerProvider;
     use opentelemetry_stdout::SpanExporter;
     use sqlx::PgPool;
-
-    let database_url = std::option_env!("DATABASE_URL").expect("Missing DATABASE_URL");
-    let pool = PgPool::connect(database_url)
-        .await
-        .expect("Failed to create Postgres pool");
-
-    if let Err(e) = sqlx::migrate!().run(&pool).await {
-        eprintln!("{e:?}");
-    } else {
-        log!("Migrations complete.");
-    }
 
     async fn server_fn_handler(
         State(app_state): State<AppState>,
@@ -52,9 +41,9 @@ async fn main() {
     pub async fn leptos_routes_handler(
         state: State<AppState>,
         request: Request<AxumBody>,
-    ) -> axum::response::Response {
+    ) -> Response {
         let State(app_state) = state.clone();
-        let handler = leptos_axum::render_route_with_context(
+        let handler = render_route_with_context(
             app_state.routes.clone(),
             move || {
                 provide_context(app_state.pool.clone());
@@ -62,6 +51,17 @@ async fn main() {
             move || shell(app_state.leptos_options.clone()),
         );
         handler(state, request).await.into_response()
+    }
+
+    let database_url = std::option_env!("DATABASE_URL").expect("Missing DATABASE_URL");
+    let pool = PgPool::connect(database_url)
+        .await
+        .expect("Failed to create Postgres pool");
+
+    if let Err(e) = sqlx::migrate!().run(&pool).await {
+        eprintln!("{e:?}");
+    } else {
+        log!("Migrations complete.");
     }
 
     global::set_text_map_propagator(TraceContextPropagator::new());
@@ -75,7 +75,7 @@ async fn main() {
     let leptos_options = conf.leptos_options;
     // Generate the list of routes in your Leptos App
     let routes = generate_route_list(App);
-
+    
     let app_state = AppState {
         leptos_options,
         pool: pool.clone(),
