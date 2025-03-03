@@ -203,10 +203,9 @@ fn StoryLink(#[prop(into)] story: StoryListItem) -> impl IntoView {
                     })}
             </p>
             <p class="meta".to_string()>
-                <A href=url>{story.comment_count} comments</A>
+                <A href=url>{story.comment_count}comments</A>
                 <span>submitted by <A href=profile_url>{story.author_name}</A></span>
-                <span title=story.created_at.to_string()
-                >{timestamp}</span>
+                <span title=story.created_at.to_string()>{timestamp}</span>
             </p>
         </li>
     }
