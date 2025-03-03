@@ -1,0 +1,65 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT \n                s.id, \n                s.title, \n                s.text, \n                s.url, \n                s.created_at, \n                u.display_name as author_name,\n                0 as rating,\n                (SELECT COUNT(*)::integer FROM comments c WHERE c.story_id = s.id) as comment_count\n            FROM \n                stories s\n            JOIN \n                users u ON s.author_id = u.id\n            ORDER BY \n                s.created_at DESC\n            LIMIT $1 \n            OFFSET $2\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "text",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "author_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "rating",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "comment_count",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "8088ff64031d78795b7d1df8889a606239dbd25978e16d0a137393cace499aef"
+}

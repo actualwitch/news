@@ -47,6 +47,33 @@ pub struct Story {
 }
 
 #[derive(Clone, Serialize, Deserialize, TypedBuilder, Debug)]
+pub struct StoryListItem {
+    pub id: i32,
+    pub title: String,
+    #[builder(default, setter(strip_option))]
+    pub text: Option<String>,
+    #[builder(default, setter(strip_option))]
+    pub url: Option<String>,
+    pub created_at: DateTime<FixedOffset>,
+    pub author_name: String,
+    pub rating: Option<i32>,
+    pub comment_count: Option<i32>,
+}
+
+impl Into<Story> for StoryListItem {
+    fn into(self) -> Story {
+        Story {
+            id: self.id,
+            title: self.title,
+            text: self.text,
+            url: self.url,
+            created_at: self.created_at,
+            author_id: 0,
+        }
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize, TypedBuilder, Debug)]
 pub struct StoryCreateArgs {
     pub title: String,
     #[builder(default, setter(strip_option))]

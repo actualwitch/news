@@ -104,3 +104,10 @@ ol {
   border-left: 4px solid green;
   padding: 4px 8px;
 }
+
+.stories {
+  .meta {
+    display: flex;
+    gap: 8px;
+  }
+}

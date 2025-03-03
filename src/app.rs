@@ -1,6 +1,6 @@
 use crate::{
     api::*,
-    model::{Story, StoryGetArgs},
+    model::{Story, StoryGetArgs, StoryListItem},
 };
 use leptos::{either::Either, prelude::*};
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
@@ -70,8 +70,8 @@ pub fn App() -> impl IntoView {
 
 #[component]
 fn StoryList() -> impl IntoView {
-    let (page, set_page) = signal(0);
-    let stories_resource = Resource::new(move || page.get(), |_| get_stories());
+    let (page, set_page) = signal(0 as i64);
+    let stories_resource = Resource::new(move || page.get(), |page| get_stories(Some(page)));
     let stories = move || {
         stories_resource
             .get()
@@ -81,9 +81,9 @@ fn StoryList() -> impl IntoView {
     view! {
         <Title text=format!("{} :: {}", "Latest", LAMBDA_FUNCTION) />
         <Suspense fallback=|| view! { <p>"Loading stories..."</p> }>
-            <ol>
+            <ol class="stories".to_string()>
                 <For each=stories key=|story| story.id let:story>
-                    <StoryLink story />
+                    <StoryLink story=story />
                 </For>
             </ol>
         </Suspense>
@@ -105,10 +105,10 @@ fn StoryDetail() -> impl IntoView {
             .children(ToChildren::to_children(move || {
                 Suspend::new(async move {
                     match story.await.clone() {
-                        Err(_) => Either::Left(
+                        Err(_) => Either::Right(
                             view! { <p class="error".to_string()>"Story not found."</p> },
                         ),
-                        Ok(Story { title, text, .. }) => Either::Right(view! {
+                        Ok(Story { title, text, .. }) => Either::Left(view! {
                             <Title text=format!("{} :: {}", title, LAMBDA_FUNCTION) />
                             <h2>{title}</h2>
                             <p>{text}</p>
@@ -179,8 +179,10 @@ fn StoryCreate() -> impl IntoView {
 }
 
 #[component]
-fn StoryLink(story: Story) -> impl IntoView {
+fn StoryLink(#[prop(into)] story: StoryListItem) -> impl IntoView {
     let url = format!("/story/{0}", story.id);
+    let profile_url = format!("/user/{0}", story.author_name);
+    let timestamp = story.created_at.format("%Y-%m-%d %H:%M:%S").to_string();
     let domain: Option<String> = try {
         let url = story.url.as_ref()?;
         let url = Url::parse(url).ok()?;
@@ -190,7 +192,7 @@ fn StoryLink(story: Story) -> impl IntoView {
     view! {
         <li>
             <p>
-                <A href=url>{story.title}</A>
+                <A href=url.clone()>{story.title}</A>
                 {domain
                     .is_some()
                     .then(|| {
@@ -199,6 +201,12 @@ fn StoryLink(story: Story) -> impl IntoView {
                             <A href=format!("/by-domain/{}", domain.clone().unwrap())>{domain}</A>
                         }
                     })}
+            </p>
+            <p class="meta".to_string()>
+                <A href=url>{story.comment_count} comments</A>
+                <span>submitted by <A href=profile_url>{story.author_name}</A></span>
+                <span title=story.created_at.to_string()
+                >{timestamp}</span>
             </p>
         </li>
     }
