@@ -1,14 +1,13 @@
 use crate::{
     api::*,
-    model::{ApiError, Story, StoryGetArgs},
+    model::{Story, StoryGetArgs},
 };
-use chrono::format;
-use leptos::prelude::*;
+use leptos::{either::Either, prelude::*};
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes, A},
-    hooks::use_params,
-    ParamSegment, StaticSegment,
+    hooks::{use_navigate, use_params},
+    ParamSegment, SsrMode, StaticSegment,
 };
 use opentelemetry_sdk::error;
 use url::Url;
@@ -45,7 +44,7 @@ pub fn App() -> impl IntoView {
                 <span class="lambda-home".to_string()>
                     <A href="/">
                         <span class="lambda-icon".to_string()>λ</span>
-                        Lambda Function
+                        {LAMBDA_FUNCTION}
                     </A>
                 </span>
                 <span class="spacer".to_string()></span>
@@ -58,7 +57,11 @@ pub fn App() -> impl IntoView {
                         path=(StaticSegment("story"), StaticSegment("create"))
                         view=StoryCreate
                     />
-                    <Route path=(StaticSegment("story"), ParamSegment("id")) view=StoryDetail />
+                    <Route
+                        path=(StaticSegment("story"), ParamSegment("id"))
+                        view=StoryDetail
+                        ssr=SsrMode::Async
+                    />
                 </Routes>
             </main>
         </Router>
@@ -87,15 +90,6 @@ fn StoryList() -> impl IntoView {
     }
 }
 
-// #[component]
-// fn LambdaTitle(
-//     #[prop()] text: String,
-// ) -> impl IntoView {
-//     view! {
-//         <Title text=text />
-//     }
-// }
-
 #[component]
 fn StoryDetail() -> impl IntoView {
     let query = use_params::<StoryGetArgs>();
@@ -104,36 +98,26 @@ fn StoryDetail() -> impl IntoView {
         id,
         |id| async move { story_get(id.unwrap_or_default()).await },
     );
-    // if (story_foo.is_none()) {
-    //     return view! { <p>"Story not found."</p> };
-    // }
-    let title = move || {
-        story.with(|story| match story {
-            Some(Ok(Story { title, .. })) => title.clone(),
-            _ => LAMBDA_FUNCTION.to_string(),
-        })
-    };
-    let content = move || {
-        story.with(|s| match s {
-            Some(Ok(Story { text, .. })) => text.clone(),
-            _ => None,
-        })
-    };
-    let page_title = move || {
-        story.with(|story| match story {
-            Some(Ok(Story { title, .. })) => format!("{} :: {}", title, LAMBDA_FUNCTION),
-            _ => LAMBDA_FUNCTION.to_string(),
-        })
-    };
-    view! {
-        <Suspense fallback=|| view! { <p>"Loading stories..."</p> }>
-            <ErrorBoundary fallback=|_| view! { <p>"Story not found."</p> }>
-                <Title text=page_title />
-                <h2>{title}</h2>
-                <p>{content}</p>
-            </ErrorBoundary>
-        </Suspense>
-    }
+
+    Suspense(
+        SuspenseProps::builder()
+            .fallback(|| "Loading...")
+            .children(ToChildren::to_children(move || {
+                Suspend::new(async move {
+                    match story.await.clone() {
+                        Err(_) => Either::Left(
+                            view! { <p class="error".to_string()>"Story not found."</p> },
+                        ),
+                        Ok(Story { title, text, .. }) => Either::Right(view! {
+                            <Title text=format!("{} :: {}", title, LAMBDA_FUNCTION) />
+                            <h2>{title}</h2>
+                            <p>{text}</p>
+                        }),
+                    }
+                })
+            }))
+            .build(),
+    )
 }
 
 #[component]
@@ -142,7 +126,7 @@ fn StoryCreate() -> impl IntoView {
 
     let value = submit.value();
 
-    let navigate = leptos_router::hooks::use_navigate();
+    let navigate = use_navigate();
 
     Effect::watch(
         move || submit.value().get(),
@@ -155,15 +139,13 @@ fn StoryCreate() -> impl IntoView {
         false,
     );
 
-    let success = move || {
-        value.with(|val| match val {
-            Some(Ok(Story { id, .. })) => Some(view! {
-                <p class="success">
-                    <A href=format!("/story/{}", id)>"Story created: "</A>
-                </p>
-            }),
-            _ => None,
-        })
+    let success = move || match value.get() {
+        Some(Ok(Story { id, .. })) => Some(view! {
+            <p class="success">
+                <A href=format!("/story/{}", id)>"Story created."</A>
+            </p>
+        }),
+        _ => None,
     };
 
     let error = move || match value.get() {
