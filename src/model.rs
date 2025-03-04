@@ -2,9 +2,9 @@ use chrono::{DateTime, FixedOffset};
 use leptos::Params;
 use leptos_router::params::Params;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 use typed_builder::TypedBuilder;
 use url::Url;
-use thiserror::Error;
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
@@ -20,7 +20,6 @@ pub mod ssr {
         pub routes: Vec<AxumRouteListing>,
     }
 }
-
 
 #[derive(Error, Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ApiError {
@@ -92,4 +91,21 @@ pub struct User {
     pub id: i32,
     pub username: String,
     pub created_at: DateTime<FixedOffset>,
+}
+
+#[derive(Clone, Serialize, Deserialize, TypedBuilder)]
+pub struct Comment {
+    pub id: i32,
+    pub text: String,
+    pub parent_id: Option<i32>,
+    pub story_id: i32,
+    pub created_at: DateTime<FixedOffset>,
+    pub author_id: i32,
+}
+
+#[derive(Clone, Serialize, Deserialize, TypedBuilder, Debug)]
+pub struct CommentCreateArgs {
+    pub text: String,
+    pub parent_id: Option<i32>,
+    pub story_id: i32,
 }

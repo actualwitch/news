@@ -1,7 +1,8 @@
 use crate::{
     api::*,
-    model::{Story, StoryGetArgs, StoryListItem},
+    model::{Comment, Story, StoryGetArgs, StoryListItem},
 };
+use chrono::Local;
 use leptos::{either::Either, prelude::*};
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
@@ -11,6 +12,7 @@ use leptos_router::{
 };
 use opentelemetry_sdk::error;
 use url::Url;
+use chrono_humanize::HumanTime;
 
 const LAMBDA_FUNCTION: &str = "Lambda Function";
 
@@ -44,14 +46,14 @@ pub fn App() -> impl IntoView {
                 <span class="lambda-home".to_string()>
                     <A href="/">
                         <span class="lambda-icon".to_string()>λ</span>
-                        {LAMBDA_FUNCTION}
+                        <span class="lambda-text".to_string()>{LAMBDA_FUNCTION}</span>
                     </A>
                 </span>
                 <span class="spacer".to_string()></span>
                 <A href="/story/create">"New"</A>
             </header>
             <main>
-                <Routes fallback=|| "Not found.".into_view()>
+                <Routes fallback=NotFound>
                     <Route path=StaticSegment("") view=StoryList />
                     <Route
                         path=(StaticSegment("story"), StaticSegment("create"))
@@ -71,7 +73,7 @@ pub fn App() -> impl IntoView {
 #[component]
 fn StoryList() -> impl IntoView {
     let (page, set_page) = signal(0 as i64);
-    let stories_resource = Resource::new(move || page.get(), |page| get_stories(Some(page)));
+    let stories_resource = Resource::new(move || page.get(), |page| story_list(Some(page)));
     let stories = move || {
         stories_resource
             .get()
@@ -81,7 +83,7 @@ fn StoryList() -> impl IntoView {
     view! {
         <Title text=format!("{} :: {}", "Latest", LAMBDA_FUNCTION) />
         <Suspense fallback=|| view! { <p>"Loading stories..."</p> }>
-            <ol class="stories".to_string()>
+            <ol class="stories".to_string() start=0>
                 <For each=stories key=|story| story.id let:story>
                     <StoryLink story=story />
                 </For>
@@ -105,13 +107,15 @@ fn StoryDetail() -> impl IntoView {
             .children(ToChildren::to_children(move || {
                 Suspend::new(async move {
                     match story.await.clone() {
-                        Err(_) => Either::Right(
-                            view! { <p class="error".to_string()>"Story not found."</p> },
-                        ),
-                        Ok(Story { title, text, .. }) => Either::Left(view! {
+                        Err(_) => Either::Right(NotFound),
+                        Ok(Story {
+                            title, text, id, ..
+                        }) => Either::Left(view! {
                             <Title text=format!("{} :: {}", title, LAMBDA_FUNCTION) />
                             <h2>{title}</h2>
                             <p>{text}</p>
+                            <CommentCreate story_id=id />
+                            <CommentList story_id=id />
                         }),
                     }
                 })
@@ -182,7 +186,8 @@ fn StoryCreate() -> impl IntoView {
 fn StoryLink(#[prop(into)] story: StoryListItem) -> impl IntoView {
     let url = format!("/story/{0}", story.id);
     let profile_url = format!("/user/{0}", story.author_name);
-    let timestamp = story.created_at.format("%Y-%m-%d %H:%M:%S").to_string();
+    let duration = story.created_at.signed_duration_since(Local::now());
+    let human_time = HumanTime::from(duration).to_string();
     let domain: Option<String> = try {
         let url = story.url.as_ref()?;
         let url = Url::parse(url).ok()?;
@@ -203,9 +208,79 @@ fn StoryLink(#[prop(into)] story: StoryListItem) -> impl IntoView {
                     })}
             </p>
             <p class="meta".to_string()>
-                <A href=url>{story.comment_count}comments</A>
+                <A href=url>{story.comment_count}" comments"</A>
                 <span>submitted by <A href=profile_url>{story.author_name}</A></span>
-                <span title=story.created_at.to_string()>{timestamp}</span>
+                <span title=story.created_at.to_string()>{human_time}</span>
+            </p>
+        </li>
+    }
+}
+
+#[component]
+pub fn NotFound() -> impl IntoView {
+    view! {
+        <Title text=format!("{} :: {}", "Not found", LAMBDA_FUNCTION) />
+        <main class="error".to_string()>
+            <header>404</header>
+            <p>"Not found."</p>
+        </main>
+    }
+}
+
+#[component]
+fn CommentCreate(#[prop(optional)] parent_id: Option<i32>, story_id: i32) -> impl IntoView {
+    let submit = ServerAction::<CommentCreate>::new();
+    view! {
+        <ActionForm action=submit>
+            <label>
+                <span>Text</span>
+                <textarea name="comment[text]"></textarea>
+            </label>
+            <input type="hidden" name="comment[story_id]" value=story_id />
+            <input type="hidden" name="comment[parent_id]" value=parent_id />
+            <button type="submit">"Add Comment"</button>
+        </ActionForm>
+    }
+}
+
+#[component]
+fn CommentList(story_id: i32) -> impl IntoView {
+    let comments = Resource::new(
+        move || story_id,
+        |story_id| async move { comment_list(story_id).await },
+    );
+
+    Suspense(
+        SuspenseProps::builder()
+            .fallback(|| "Loading...")
+            .children(ToChildren::to_children(move || {
+                Suspend::new(async move {
+                    match comments.await.clone() {
+                        Err(_) => Either::Right(NotFound),
+                        Ok(comments) => Either::Left(view! {
+                            <ul class="comments".to_string()>
+                                <For each=move || comments.clone() key=|comment| comment.id let:comment>
+                                    <CommentDetail comment=comment />
+                                </For>
+                            </ul>
+                        }),
+                    }
+                })
+            }))
+            .build(),
+    )
+}
+
+#[component]
+fn CommentDetail(comment: Comment) -> impl IntoView {
+    let duration = comment.created_at.signed_duration_since(Local::now());
+    let human_time = HumanTime::from(duration).to_string();
+    view! {
+        <li>
+            <p>{comment.text}</p>
+            <p class="meta".to_string()>
+                <span>by {comment.author_id}</span>
+                <span title=comment.created_at.to_string()>{human_time}</span>
             </p>
         </li>
     }

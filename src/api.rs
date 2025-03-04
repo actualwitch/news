@@ -1,4 +1,4 @@
-use crate::model::{Story, StoryCreateArgs, StoryListItem};
+use crate::model::{Comment, CommentCreateArgs, Story, StoryCreateArgs, StoryListItem};
 use leptos::prelude::*;
 
 #[cfg(feature = "ssr")]
@@ -14,7 +14,7 @@ pub mod ssr {
 const PAGE_SIZE: i64 = 30;
 
 #[server]
-pub async fn get_stories(page: Option<i64>) -> Result<Vec<StoryListItem>, ServerFnError> {
+pub async fn story_list(page: Option<i64>) -> Result<Vec<StoryListItem>, ServerFnError> {
     use self::ssr::pool;
     use sqlx::query_as;
 
@@ -95,7 +95,24 @@ pub async fn story_get(id: i32) -> Result<Story, ServerFnError> {
 }
 
 #[server]
-pub async fn comment_create(story_id: i32, parent_id: Option<i32>, text: String) -> Result<(), ServerFnError> {
+pub async fn get_story_page_count() -> Result<i64, ServerFnError> {
+    use self::ssr::pool;
+    use sqlx::query;
+
+    let pool = pool()?;
+
+    let count = query!("SELECT COUNT(*) FROM stories")
+        .fetch_one(&pool)
+        .await?
+        .count;
+
+    let pages = count.map(|count| count / PAGE_SIZE + 1).unwrap_or(0);
+
+    Ok(pages)
+}
+
+#[server]
+pub async fn comment_create(comment: CommentCreateArgs) -> Result<(), ServerFnError> {
     use self::ssr::pool;
     use chrono::Local;
     use sqlx::query;
@@ -105,9 +122,9 @@ pub async fn comment_create(story_id: i32, parent_id: Option<i32>, text: String)
 
     query!(
         r#"INSERT INTO comments (story_id, parent_id, text, author_id, created_at) VALUES ($1, $2, $3, $4, $5)"#,
-        story_id,
-        parent_id,
-        text,
+        comment.story_id,
+        comment.parent_id,
+        comment.text,
         1,
         timestamp.into()
     )
@@ -115,4 +132,22 @@ pub async fn comment_create(story_id: i32, parent_id: Option<i32>, text: String)
     .await?;
 
     Ok(())
+}
+
+#[server]
+pub async fn comment_list(story_id: i32) -> Result<Vec<Comment>, ServerFnError> {
+    use self::ssr::pool;
+    use sqlx::query_as;
+
+    let pool = pool()?;
+
+    let comments = query_as!(
+        Comment,
+        r#"SELECT * FROM comments WHERE story_id = $1 ORDER BY created_at DESC"#,
+        story_id
+    )
+    .fetch_all(&pool)
+    .await?;
+
+    Ok(comments)
 }

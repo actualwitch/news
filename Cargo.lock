@@ -422,6 +422,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "chrono-humanize"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "799627e6b4d27827a814e837b9d8a504832086081806d45b1afa34dc982b023b"
+dependencies = [
+ "chrono",
+]
+
+[[package]]
 name = "clang-sys"
 version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1437,6 +1446,7 @@ dependencies = [
  "tachys",
  "thiserror 2.0.12",
  "throw_error",
+ "tracing",
  "typed-builder",
  "typed-builder-macro",
  "wasm-bindgen",
@@ -1491,6 +1501,7 @@ dependencies = [
  "reactive_graph",
  "send_wrapper",
  "tachys",
+ "tracing",
  "wasm-bindgen",
  "web-sys",
 ]
@@ -1547,6 +1558,7 @@ dependencies = [
  "rstml",
  "server_fn_macro",
  "syn",
+ "tracing",
  "uuid",
 ]
 
@@ -1621,6 +1633,7 @@ dependencies = [
  "serde_json",
  "server_fn",
  "tachys",
+ "tracing",
 ]
 
 [[package]]
@@ -1807,6 +1820,7 @@ dependencies = [
  "axum 0.7.9",
  "axum-tracing-opentelemetry",
  "chrono",
+ "chrono-humanize",
  "console_error_panic_hook",
  "leptos",
  "leptos_axum",
@@ -2245,6 +2259,7 @@ dependencies = [
  "serde",
  "slotmap",
  "thiserror 2.0.12",
+ "tracing",
  "web-sys",
 ]
 
@@ -2995,6 +3010,7 @@ dependencies = [
  "send_wrapper",
  "slotmap",
  "throw_error",
+ "tracing",
  "wasm-bindgen",
  "web-sys",
 ]

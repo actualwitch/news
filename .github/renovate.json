@@ -1,14 +1,5 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:base"],
-  "packageRules": [
-    {
-      "groupName": "npm",
-      "matchFileNames": ["package.json"]
-    },
-    {
-      "groupName": "cargo",
-      "matchFileNames": ["Cargo.toml"]
-    }
-  ]
+  "autodiscover": true
 }

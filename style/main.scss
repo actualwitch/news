@@ -41,16 +41,30 @@ form {
   flex-direction: column;
 }
 
-.lambda-home > a {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  text-decoration: none;
-  color: black;
-  &:hover {
-    text-decoration: underline;
+.lambda-home {
+  a::after {
+    content: "σ";
+    font-variant: super;
+    color: currentColor;
+  }
+  & > a {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: black;
+  }
+
+  &:hover .lambda-text, &:hover a {
     color: limegreen;
   }
+
+  &:hover .lambda-text {
+    text-decoration: underline;
+  }
+}
+
+.lambda-text {
+  transition: inherit;
 }
 
 .lambda-icon {
@@ -75,6 +89,7 @@ form {
   font-weight: initial;
   font-size: 12px;
   font-size: 24px;
+  margin-right: 8px;
 }
 
 li + li {
@@ -110,4 +125,12 @@ ol {
     display: flex;
     gap: 8px;
   }
+}
+
+.comments {
+  li {
+    list-style: none;
+  }
+
+  padding-left: 0;
 }

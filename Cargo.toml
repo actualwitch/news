@@ -8,7 +8,7 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-leptos = { version = "0.7.0", features = ["nightly"] }
+leptos = { version = "0.7.0", features = ["nightly", "tracing"] }
 leptos_router = { version = "0.7.0", features = ["nightly"] }
 axum = { version = "0.7", features = ["macros"], optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
@@ -34,6 +34,7 @@ opentelemetry-stdout = "0.28.0"
 axum-tracing-opentelemetry = "0.26.1"
 anyhow = "1.0.96"
 thiserror = "2.0.11"
+chrono-humanize = "0.2.3"
 
 [features]
 hydrate = ["leptos/hydrate", "dep:console_error_panic_hook", "dep:wasm-bindgen"]
