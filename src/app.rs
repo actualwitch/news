@@ -3,7 +3,8 @@ use crate::{
     model::{Comment, Story, StoryGetArgs, StoryListItem},
 };
 use chrono::Local;
-use leptos::{either::Either, prelude::*};
+use chrono_humanize::HumanTime;
+use leptos::{either::Either, prelude::*, task::spawn_local};
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes, A},
@@ -12,7 +13,6 @@ use leptos_router::{
 };
 use opentelemetry_sdk::error;
 use url::Url;
-use chrono_humanize::HumanTime;
 
 const LAMBDA_FUNCTION: &str = "Lambda Function";
 
@@ -96,17 +96,26 @@ fn StoryList() -> impl IntoView {
 fn StoryDetail() -> impl IntoView {
     let query = use_params::<StoryGetArgs>();
     let id = move || query.with(|q| q.clone().map(|q| q.id));
-    let story = Resource::new(
-        id,
-        |id| async move { story_get(id.unwrap_or_default()).await },
-    );
+    let story_res = Resource::new(id, |id| async move {
+        match id {
+            Ok(id) => story_get(id).await,
+            _ => Err(ServerFnError::ServerError("Story not found.".into())),
+        }
+    });
+    let comments: Resource<Result<Vec<Comment>, ServerFnError>> =
+        Resource::new(id, |story_id| async move {
+            match story_id {
+                Ok(story_id) => comment_list(story_id).await,
+                _ => Err(ServerFnError::ServerError("Comments not found.".into())),
+            }
+        });
 
     Suspense(
         SuspenseProps::builder()
             .fallback(|| "Loading...")
             .children(ToChildren::to_children(move || {
                 Suspend::new(async move {
-                    match story.await.clone() {
+                    match story_res.await {
                         Err(_) => Either::Right(NotFound),
                         Ok(Story {
                             title, text, id, ..
@@ -114,8 +123,13 @@ fn StoryDetail() -> impl IntoView {
                             <Title text=format!("{} :: {}", title, LAMBDA_FUNCTION) />
                             <h2>{title}</h2>
                             <p>{text}</p>
-                            <CommentCreate story_id=id />
-                            <CommentList story_id=id />
+                            <CommentCreate
+                                story_id=id
+                                on_submit=move || {
+                                    comments.refetch();
+                                }
+                            />
+                            <CommentList comments=comments />
                         }),
                     }
                 })
@@ -126,12 +140,10 @@ fn StoryDetail() -> impl IntoView {
 
 #[component]
 fn StoryCreate() -> impl IntoView {
-    let submit = ServerAction::<StoryCreate>::new();
-
-    let value = submit.value();
-
     let navigate = use_navigate();
 
+    let submit = ServerAction::<StoryCreate>::new();
+    let value = submit.value();
     Effect::watch(
         move || submit.value().get(),
         move |story, _, _| match story {
@@ -228,47 +240,39 @@ pub fn NotFound() -> impl IntoView {
 }
 
 #[component]
-fn CommentCreate(#[prop(optional)] parent_id: Option<i32>, story_id: i32) -> impl IntoView {
+fn CommentCreate(
+    #[prop(optional)] parent_id: Option<i32>,
+    story_id: i32,
+    on_submit: impl Fn() -> () + 'static,
+) -> impl IntoView {
+    let navigate = use_navigate();
     let submit = ServerAction::<CommentCreate>::new();
+    let input_element: NodeRef<leptos::html::Textarea> = NodeRef::new();
+    Effect::watch(
+        move || submit.value().get(),
+        move |comment, _, _| {
+            if let Some(Ok(_)) = comment.clone() {
+                let comment_clone = comment.clone();
+
+                leptos::logging::log!("comment created: {:?}", comment_clone);
+                submit.clear();
+                input_element.get().map(|input| input.set_value(""));
+                on_submit();
+            }
+        },
+        false,
+    );
     view! {
         <ActionForm action=submit>
             <label>
                 <span>Text</span>
-                <textarea name="comment[text]"></textarea>
+                <textarea name="comment[text]" node_ref=input_element></textarea>
             </label>
             <input type="hidden" name="comment[story_id]" value=story_id />
             <input type="hidden" name="comment[parent_id]" value=parent_id />
             <button type="submit">"Add Comment"</button>
         </ActionForm>
     }
-}
-
-#[component]
-fn CommentList(story_id: i32) -> impl IntoView {
-    let comments = Resource::new(
-        move || story_id,
-        |story_id| async move { comment_list(story_id).await },
-    );
-
-    Suspense(
-        SuspenseProps::builder()
-            .fallback(|| "Loading...")
-            .children(ToChildren::to_children(move || {
-                Suspend::new(async move {
-                    match comments.await.clone() {
-                        Err(_) => Either::Right(NotFound),
-                        Ok(comments) => Either::Left(view! {
-                            <ul class="comments".to_string()>
-                                <For each=move || comments.clone() key=|comment| comment.id let:comment>
-                                    <CommentDetail comment=comment />
-                                </For>
-                            </ul>
-                        }),
-                    }
-                })
-            }))
-            .build(),
-    )
 }
 
 #[component]
@@ -284,4 +288,31 @@ fn CommentDetail(comment: Comment) -> impl IntoView {
             </p>
         </li>
     }
+}
+
+#[component]
+fn CommentList(comments: Resource<Result<Vec<Comment>, ServerFnError>>) -> impl IntoView {
+    Suspense(
+        SuspenseProps::builder()
+            .fallback(|| "Loading...")
+            .children(ToChildren::to_children(move || {
+                Suspend::new(async move {
+                    match comments.await.clone() {
+                        Err(_) => Either::Right(NotFound),
+                        Ok(value) => Either::Left(view! {
+                            <ol class="comments".to_string()>
+                                <For
+                                    each=move || value.clone()
+                                    key=|comment| comment.id
+                                    let:comment
+                                >
+                                    <CommentDetail comment=comment />
+                                </For>
+                            </ol>
+                        }),
+                    }
+                })
+            }))
+            .build(),
+    )
 }

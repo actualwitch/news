@@ -46,6 +46,7 @@ form {
     content: "σ";
     font-variant: super;
     color: currentColor;
+    padding-left: 1px;
   }
   & > a {
     display: flex;
@@ -54,7 +55,8 @@ form {
     color: black;
   }
 
-  &:hover .lambda-text, &:hover a {
+  &:hover .lambda-text,
+  &:hover a {
     color: limegreen;
   }
 
@@ -119,12 +121,12 @@ ol {
   border-left: 4px solid green;
   padding: 4px 8px;
 }
+.meta {
+  display: flex;
+  gap: 8px;
+}
 
 .stories {
-  .meta {
-    display: flex;
-    gap: 8px;
-  }
 }
 
 .comments {
