@@ -100,7 +100,7 @@ pub struct Comment {
     pub parent_id: Option<i32>,
     pub story_id: i32,
     pub created_at: DateTime<FixedOffset>,
-    pub author_id: i32,
+    pub author_name: String,
 }
 
 #[derive(Clone, Serialize, Deserialize, TypedBuilder, Debug)]

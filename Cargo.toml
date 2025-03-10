@@ -35,6 +35,7 @@ axum-tracing-opentelemetry = "0.26.1"
 anyhow = "1.0.96"
 thiserror = "2.0.11"
 chrono-humanize = "0.2.3"
+leptos-use = "0.15.6"
 
 [features]
 hydrate = ["leptos/hydrate", "dep:console_error_panic_hook", "dep:wasm-bindgen"]
@@ -46,6 +47,7 @@ ssr = [
     "leptos/ssr",
     "leptos_meta/ssr",
     "leptos_router/ssr",
+    "leptos-use/ssr",
 ]
 
 # Defines a size-optimized profile for the WASM bundle in release mode

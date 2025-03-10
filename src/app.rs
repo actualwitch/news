@@ -2,15 +2,16 @@ use crate::{
     api::*,
     model::{Comment, Story, StoryGetArgs, StoryListItem},
 };
-use chrono::Local;
+use chrono::{DateTime, FixedOffset, Local};
 use chrono_humanize::HumanTime;
-use leptos::{either::Either, prelude::*, task::spawn_local};
+use leptos::{either::Either, logging::log, prelude::*, task::spawn_local};
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes, A},
     hooks::{use_navigate, use_params},
     ParamSegment, SsrMode, StaticSegment,
 };
+use leptos_use::use_interval_fn;
 use opentelemetry_sdk::error;
 use url::Url;
 
@@ -35,9 +36,21 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
     }
 }
 
+fn provide_now() {
+    let (now, set_now) = signal(Local::now());
+    provide_context(now);
+    use_interval_fn(
+        move || {
+            set_now(Local::now());
+        },
+        60_000,
+    );
+}
+
 #[component]
 pub fn App() -> impl IntoView {
     provide_meta_context();
+    provide_now();
 
     view! {
         <Stylesheet id="leptos" href="/pkg/news.css" />
@@ -109,32 +122,52 @@ fn StoryDetail() -> impl IntoView {
         }
     });
 
-    Suspense(
-        SuspenseProps::builder()
-            .fallback(|| "Loading...")
-            .children(ToChildren::to_children(move || {
+    view! {
+        <Suspense fallback=|| {
+            "Loading..."
+        }>
+            {move || {
                 Suspend::new(async move {
-                    match story_res.await {
-                        Err(_) => Either::Right(NotFound),
-                        Ok(Story {
-                            title, text, id, ..
-                        }) => Either::Left(view! {
-                            <Title text=format!("{} :: {}", title, LAMBDA_FUNCTION) />
-                            <h2>{title}</h2>
-                            <p>{text}</p>
-                            <CommentCreate
-                                story_id=id
-                                on_submit=move || {
-                                    comments.refetch();
+                    let story = story_res.await;
+                    comments.await;
+                    view! {
+                        {match story {
+                            Ok(Story { title, text, id, .. }) => {
+                                Either::Left(
+                                    view! {
+                                        <Title text=format!("{} :: {}", title, LAMBDA_FUNCTION) />
+                                        <h2>{title}</h2>
+                                        <p>{text}</p>
+                                        <CommentCreate
+                                            story_id=id
+                                            on_submit=move || {
+                                                comments.refetch();
+                                            }
+                                        />
+                                    },
+                                )
+                            }
+                            Err(_) => Either::Right(NotFound),
+                        }}
+                        <ol class="comments".to_string()>
+                            <For
+                                each=move || comments.get().unwrap().into_iter().enumerate()
+                                key=|(_, comment)| comment.id
+                                children=move |(index, _)| {
+                                    Memo::new(move |_| { comments.get()?.get(index).cloned() })
+                                        .get()
+                                        .clone()
+                                        .and_then(|comment| {
+                                            view! { <CommentDetail comment=comment.clone() /> }.into()
+                                        })
                                 }
                             />
-                            <CommentList comments=comments />
-                        }),
+                        </ol>
                     }
                 })
-            }))
-            .build(),
-    )
+            }}
+        </Suspense>
+    }
 }
 
 #[component]
@@ -194,11 +227,21 @@ fn StoryCreate() -> impl IntoView {
 }
 
 #[component]
+fn RelativeTime(from: DateTime<FixedOffset>) -> impl IntoView {
+    let now = use_context::<ReadSignal<DateTime<Local>>>().expect("now should be provided");
+    let human_time = move || {
+        let duration = from.signed_duration_since(now.get());
+        HumanTime::from(duration).to_string()
+    };
+    view! {
+        <span title=from.to_string()>{human_time}</span>
+    }
+}
+
+#[component]
 fn StoryLink(#[prop(into)] story: StoryListItem) -> impl IntoView {
     let url = format!("/story/{0}", story.id);
-    let profile_url = format!("/user/{0}", story.author_name);
-    let duration = story.created_at.signed_duration_since(Local::now());
-    let human_time = HumanTime::from(duration).to_string();
+
     let domain: Option<String> = try {
         let url = story.url.as_ref()?;
         let url = Url::parse(url).ok()?;
@@ -220,11 +263,17 @@ fn StoryLink(#[prop(into)] story: StoryListItem) -> impl IntoView {
             </p>
             <p class="meta".to_string()>
                 <A href=url>{story.comment_count}" comments"</A>
-                <span>submitted by <A href=profile_url>{story.author_name}</A></span>
-                <span title=story.created_at.to_string()>{human_time}</span>
+                <span>submitted by <UserLink user_name=story.author_name /></span>
+                <RelativeTime from=story.created_at />
             </p>
         </li>
     }
+}
+
+#[component]
+fn UserLink(user_name: String) -> impl IntoView {
+    let profile_url = format!("/user/{0}", user_name);
+    view! { <A href=profile_url>{user_name}</A> }
 }
 
 #[component]
@@ -276,45 +325,14 @@ fn CommentCreate(
 
 #[component]
 fn CommentDetail(comment: Comment) -> impl IntoView {
-    let duration = comment.created_at.signed_duration_since(Local::now());
-    let human_time = HumanTime::from(duration).to_string();
+    
     view! {
         <li>
             <p>{comment.text}</p>
             <p class="meta".to_string()>
-                <span>by {comment.author_id}</span>
-                <span title=comment.created_at.to_string()>{human_time}</span>
+                <span>by <UserLink user_name=comment.author_name /></span>
+                <RelativeTime from=comment.created_at />
             </p>
         </li>
     }
-}
-
-#[component]
-fn CommentList(comments: Resource<Vec<Comment>>) -> impl IntoView {
-    Suspense(
-        SuspenseProps::builder()
-            .fallback(|| "Loading...")
-            .children(ToChildren::to_children(move || {
-                Suspend::new(async move {
-                    comments.await;
-                    view! {
-                        <ol class="comments".to_string()>
-                            <For
-                                each=move || comments.get().unwrap().into_iter().enumerate()
-                                key=|(_, comment)| comment.id
-                                children=move |(index, _)| {
-                                    let value = Memo::new(move |_| {
-                                        comments.with(move |comments| comments.clone().map(|data| data.get(index).cloned()))
-                                    });
-                                    view! {
-                                        <CommentDetail comment=value.get().unwrap().unwrap() />
-                                    }
-                                }
-                            />
-                        </ol>
-                    }
-                })
-            }))
-            .build(),
-    )
 }

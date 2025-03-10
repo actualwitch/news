@@ -11,7 +11,7 @@ pub mod ssr {
     }
 }
 
-const PAGE_SIZE: i64 = 30;
+const PAGE_SIZE: i64 = 32;
 
 #[server]
 pub async fn story_list(page: Option<i64>) -> Result<Vec<StoryListItem>, ServerFnError> {
@@ -143,7 +143,19 @@ pub async fn comment_list(story_id: i32) -> Result<Vec<Comment>, ServerFnError> 
 
     let comments = query_as!(
         Comment,
-        r#"SELECT * FROM comments WHERE story_id = $1 ORDER BY created_at DESC"#,
+        r#"
+            SELECT 
+                c.id,
+                c.text,
+                c.parent_id,
+                c.story_id,
+                c.created_at,
+                u.display_name as author_name
+            FROM comments c
+            JOIN 
+                users u ON c.author_id = u.id
+            WHERE story_id = $1
+            ORDER BY created_at DESC"#,
         story_id
     )
     .fetch_all(&pool)
