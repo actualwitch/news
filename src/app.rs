@@ -4,16 +4,16 @@ use crate::{
 };
 use chrono::{DateTime, FixedOffset, Local};
 use chrono_humanize::HumanTime;
-use leptos::{either::Either, logging::log, prelude::*, task::spawn_local};
+use leptos::{either::Either, logging::log, prelude::*};
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes, A},
     hooks::{use_navigate, use_params},
     ParamSegment, SsrMode, StaticSegment,
 };
-use leptos_use::use_interval_fn;
-use opentelemetry_sdk::error;
+use leptos_use::{use_document_visibility, use_interval_fn};
 use url::Url;
+use web_sys::VisibilityState;
 
 const LAMBDA_FUNCTION: &str = "Lambda Function";
 
@@ -38,12 +38,16 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
 
 fn provide_now() {
     let (now, set_now) = signal(Local::now());
+    let visibility = use_document_visibility();
+
     provide_context(now);
     use_interval_fn(
         move || {
-            set_now(Local::now());
+            if visibility.get() == VisibilityState::Visible {
+                set_now(Local::now());
+            }
         },
-        60_000,
+        30_000,
     );
 }
 
@@ -65,20 +69,18 @@ pub fn App() -> impl IntoView {
                 <span class="spacer".to_string()></span>
                 <A href="/story/create">"New"</A>
             </header>
-            <main>
-                <Routes fallback=NotFound>
-                    <Route path=StaticSegment("") view=StoryList />
-                    <Route
-                        path=(StaticSegment("story"), StaticSegment("create"))
-                        view=StoryCreate
-                    />
-                    <Route
-                        path=(StaticSegment("story"), ParamSegment("id"))
-                        view=StoryDetail
-                        ssr=SsrMode::Async
-                    />
-                </Routes>
-            </main>
+            <Routes fallback=NotFound>
+                <Route path=StaticSegment("") view=StoryList />
+                <Route
+                    path=(StaticSegment("story"), StaticSegment("create"))
+                    view=StoryCreate
+                />
+                <Route
+                    path=(StaticSegment("story"), ParamSegment("id"))
+                    view=StoryDetail
+                    ssr=SsrMode::Async
+                />
+            </Routes>
         </Router>
     }
 }
@@ -95,13 +97,13 @@ fn StoryList() -> impl IntoView {
     };
     view! {
         <Title text=format!("{} :: {}", "Latest", LAMBDA_FUNCTION) />
-        <Suspense fallback=|| view! { <p>"Loading stories..."</p> }>
+        <Transition fallback=|| view! { <p>"Loading stories..."</p> }>
             <ol class="stories".to_string() start=0>
                 <For each=stories key=|story| story.id let:story>
                     <StoryLink story=story />
                 </For>
             </ol>
-        </Suspense>
+        </Transition>
     }
 }
 
@@ -123,7 +125,7 @@ fn StoryDetail() -> impl IntoView {
     });
 
     view! {
-        <Suspense fallback=|| {
+        <Transition fallback=|| {
             "Loading..."
         }>
             {move || {
@@ -136,8 +138,14 @@ fn StoryDetail() -> impl IntoView {
                                 Either::Left(
                                     view! {
                                         <Title text=format!("{} :: {}", title, LAMBDA_FUNCTION) />
-                                        <h2>{title}</h2>
-                                        <p>{text}</p>
+                                        <main>
+                                            <h1>{title}</h1>
+                                            {text.and_then(|text| Some(
+                                                text.lines()
+                                                    .map(|line| line.to_owned())
+                                                    .map(|line| view! {<p>{line}</p>}).collect_view()
+                                            ))}
+                                        </main>
                                         <CommentCreate
                                             story_id=id
                                             on_submit=move || {
@@ -166,7 +174,7 @@ fn StoryDetail() -> impl IntoView {
                     }
                 })
             }}
-        </Suspense>
+        </Transition>
     }
 }
 
@@ -211,18 +219,20 @@ fn StoryCreate() -> impl IntoView {
 
     view! {
         <Title text=format!("{} :: {}", "New", LAMBDA_FUNCTION) />
-        <ActionForm action=submit>
-            {success} {error} <header>New Story</header> <label>
-                <span>Title</span>
-                <input type="text" name="story[title]" />
-            </label> <label>
-                <span>Text</span>
-                <textarea name="story[text]"></textarea>
-            </label> <label>
-                <span>URL</span>
-                <input type="text" name="story[url]" />
-            </label> <button type="submit">"Create"</button>
-        </ActionForm>
+        <main>
+            <ActionForm action=submit>
+                {success} {error} <h1>New Story</h1> <label>
+                    <span>Title</span>
+                    <input type="text" name="story[title]" />
+                </label> <label>
+                    <span>Text</span>
+                    <textarea name="story[text]"></textarea>
+                </label> <label>
+                    <span>URL</span>
+                    <input type="text" name="story[url]" />
+                </label> <button type="submit">"Create"</button>
+            </ActionForm>
+        </main>
     }
 }
 
@@ -250,7 +260,7 @@ fn StoryLink(#[prop(into)] story: StoryListItem) -> impl IntoView {
     };
     view! {
         <li>
-            <p>
+            <div>
                 <A href=url.clone()>{story.title}</A>
                 {domain
                     .is_some()
@@ -260,12 +270,12 @@ fn StoryLink(#[prop(into)] story: StoryListItem) -> impl IntoView {
                             <A href=format!("/by-domain/{}", domain.clone().unwrap())>{domain}</A>
                         }
                     })}
-            </p>
-            <p class="meta".to_string()>
+            </div>
+            <div class="meta".to_string()>
                 <A href=url>{story.comment_count}" comments"</A>
                 <span>submitted by <UserLink user_name=story.author_name /></span>
                 <RelativeTime from=story.created_at />
-            </p>
+            </div>
         </li>
     }
 }
@@ -301,8 +311,6 @@ fn CommentCreate(
         move |comment, _, _| {
             if let Some(Ok(_)) = comment.clone() {
                 let comment_clone = comment.clone();
-
-                leptos::logging::log!("comment created: {:?}", comment_clone);
                 submit.clear();
                 input_element.get().map(|input| input.set_value(""));
                 on_submit();
@@ -325,14 +333,13 @@ fn CommentCreate(
 
 #[component]
 fn CommentDetail(comment: Comment) -> impl IntoView {
-    
     view! {
         <li>
-            <p>{comment.text}</p>
-            <p class="meta".to_string()>
+            <div>{comment.text}</div>
+            <div class="meta".to_string()>
                 <span>by <UserLink user_name=comment.author_name /></span>
                 <RelativeTime from=comment.created_at />
-            </p>
+            </div>
         </li>
     }
 }

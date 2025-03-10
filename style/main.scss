@@ -1,4 +1,9 @@
 @use "reset";
+@import 'shevy';
+
+@include headings;
+@include body;
+@include content;
 
 body {
   font-family: system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
@@ -8,20 +13,32 @@ body {
   padding: 1ch;
 }
 
-body > header {
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 24px;
-  border-right: 4px solid green;
-
-  margin-bottom: 16px;
-  padding-right: 8px;
+body {
+  & > header {
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: bs();
+    border-right: 4px solid green;
+  
+    margin-bottom: 16px;
+    padding-right: 8px;
+  }
+  header > a {
+    font-size: bs(0.42);
+  }
 }
 
-body > header > a {
-  font-size: 16px;
+main {
+  h1 {
+    font-size: 1.75em;
+    font-weight: 300;
+    margin-bottom: 0.4em;
+  }
+  p {
+    margin-bottom: 0.5em;
+  }
 }
 
 a {
@@ -37,10 +54,20 @@ a {
 }
 
 form {
-  display: flex;
-  flex-direction: column;
-}
+  &, & label {
+    display: flex;
+    flex-direction: column;
+  }
 
+  label + label {
+    margin-top: bs(0.5);
+  }
+
+  button {
+    margin-top: bs();
+  }
+  
+}
 .lambda-home {
   a::after {
     content: "σ";
@@ -89,8 +116,7 @@ form {
   place-items: center;
   font-family: Verdana, Geneva, sans-serif;
   font-weight: initial;
-  font-size: 12px;
-  font-size: 24px;
+  line-height: initial;
   margin-right: 8px;
 }
 
@@ -126,7 +152,10 @@ ol {
   gap: 8px;
 }
 
-.stories {
+.stories, .comments {
+  li > div:nth-of-type(2) {
+    font-size: bs(0.55);
+  }
 }
 
 .comments {
@@ -135,4 +164,5 @@ ol {
   }
 
   padding-left: 0;
+  margin-top: bs();
 }

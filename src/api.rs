@@ -163,3 +163,69 @@ pub async fn comment_list(story_id: i32) -> Result<Vec<Comment>, ServerFnError> 
 
     Ok(comments)
 }
+
+#[server]
+pub async fn comment_with_parents(comment_id: i32) -> Result<Vec<Comment>, ServerFnError> {
+    use self::ssr::pool;
+    use chrono::{DateTime, FixedOffset, Utc};
+    use sqlx::{postgres::PgRow, query, Row};
+
+    let pool = pool()?;
+
+    let rows = query(
+        r#"
+        WITH RECURSIVE comment_hierarchy AS (
+            -- Base case: the starting comment
+            SELECT 
+                c.id,
+                c.text,
+                c.parent_id,
+                c.story_id,
+                c.created_at,
+                u.display_name as author_name
+            FROM 
+                comments c
+            JOIN 
+                users u ON c.author_id = u.id
+            WHERE 
+                c.id = $1
+            
+            UNION ALL
+            
+            -- Recursive case: parent comments
+            SELECT 
+                c.id,
+                c.text,
+                c.parent_id,
+                c.story_id,
+                c.created_at,
+                u.display_name as author_name
+            FROM 
+                comments c
+            JOIN 
+                users u ON c.author_id = u.id
+            JOIN 
+                comment_hierarchy ch ON c.id = ch.parent_id
+        )
+        SELECT * FROM comment_hierarchy
+        ORDER BY created_at ASC -- Order from oldest to newest
+        "#,
+    )
+    .bind(comment_id)
+    .fetch_all(&pool)
+    .await?;
+
+    let comments = rows
+        .into_iter()
+        .map(|row: PgRow| Comment {
+            id: row.get("id"),
+            text: row.get("text"),
+            parent_id: row.get("parent_id"),
+            story_id: row.get("story_id"),
+            created_at: row.get::<DateTime<Utc>, _>("created_at").into(),
+            author_name: row.get("author_name"),
+        })
+        .collect();
+
+    Ok(comments)
+}
