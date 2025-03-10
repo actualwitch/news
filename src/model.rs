@@ -93,7 +93,7 @@ pub struct User {
     pub created_at: DateTime<FixedOffset>,
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug, TypedBuilder)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Debug, TypedBuilder)]
 pub struct Comment {
     pub id: i32,
     pub text: String,

@@ -102,13 +102,12 @@ fn StoryDetail() -> impl IntoView {
             _ => Err(ServerFnError::ServerError("Story not found.".into())),
         }
     });
-    let comments: Resource<Result<Vec<Comment>, ServerFnError>> =
-        Resource::new(id, |story_id| async move {
-            match story_id {
-                Ok(story_id) => comment_list(story_id).await,
-                _ => Err(ServerFnError::ServerError("Comments not found.".into())),
-            }
-        });
+    let comments = Resource::new(id, |story_id| async move {
+        match story_id {
+            Ok(story_id) => comment_list(story_id).await.unwrap_or(vec![]),
+            _ => vec![],
+        }
+    });
 
     Suspense(
         SuspenseProps::builder()
@@ -291,25 +290,28 @@ fn CommentDetail(comment: Comment) -> impl IntoView {
 }
 
 #[component]
-fn CommentList(comments: Resource<Result<Vec<Comment>, ServerFnError>>) -> impl IntoView {
+fn CommentList(comments: Resource<Vec<Comment>>) -> impl IntoView {
     Suspense(
         SuspenseProps::builder()
             .fallback(|| "Loading...")
             .children(ToChildren::to_children(move || {
                 Suspend::new(async move {
-                    match comments.await.clone() {
-                        Err(_) => Either::Right(NotFound),
-                        Ok(value) => Either::Left(view! {
-                            <ol class="comments".to_string()>
-                                <For
-                                    each=move || value.clone()
-                                    key=|comment| comment.id
-                                    let:comment
-                                >
-                                    <CommentDetail comment=comment />
-                                </For>
-                            </ol>
-                        }),
+                    comments.await;
+                    view! {
+                        <ol class="comments".to_string()>
+                            <For
+                                each=move || comments.get().unwrap().into_iter().enumerate()
+                                key=|(_, comment)| comment.id
+                                children=move |(index, _)| {
+                                    let value = Memo::new(move |_| {
+                                        comments.with(move |comments| comments.clone().map(|data| data.get(index).cloned()))
+                                    });
+                                    view! {
+                                        <CommentDetail comment=value.get().unwrap().unwrap() />
+                                    }
+                                }
+                            />
+                        </ol>
                     }
                 })
             }))
