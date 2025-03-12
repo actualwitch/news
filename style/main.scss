@@ -5,6 +5,10 @@
 @include body;
 @include content;
 
+$shevy: (
+  base-font-scale: (1.802, 1.602, 1.424, 1.266, 1.125, 1)
+);
+
 body {
   font-family: system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
     "Segoe UI Symbol", "Noto Color Emoji";
@@ -14,31 +18,33 @@ body {
 }
 
 body {
-  & > header {
+  & > header > ul {
     font-weight: bold;
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: bs();
     border-right: 4px solid green;
   
-    margin-bottom: 16px;
+    margin-bottom: bs(0.35);
+    padding: 0;
     padding-right: 8px;
-  }
-  header > a {
-    font-size: bs(0.42);
+
+    li {
+      list-style: none;
+      list-style-type: none;
+    }
   }
 }
 
 main {
-  h1 {
-    font-size: 1.75em;
-    font-weight: 300;
-    margin-bottom: 0.4em;
-  }
-  p {
-    margin-bottom: 0.5em;
-  }
+//   h1 {
+//     font-size: 1.75em;
+//     font-weight: 300;
+//     margin-bottom: 0.4em;
+//   }
+//   p {
+//     margin-bottom: 0.5em;
+//   }
 }
 
 a {
@@ -69,6 +75,7 @@ form {
   
 }
 .lambda-home {
+  font-size: 24px;
   a::after {
     content: "σ";
     font-variant: super;
@@ -118,10 +125,6 @@ form {
   font-weight: initial;
   line-height: initial;
   margin-right: 8px;
-}
-
-li + li {
-  margin-top: 8px;
 }
 
 ol {

@@ -1,9 +1,12 @@
+use std::cmp::min;
+
 use crate::{
     api::*,
     model::{Comment, Story, StoryGetArgs, StoryListItem},
 };
 use chrono::{DateTime, FixedOffset, Local};
 use chrono_humanize::HumanTime;
+use comrak::{format_html, format_html_with_plugins, markdown_to_html_with_plugins, nodes::NodeValue, parse_document, plugins::syntect::SyntectAdapterBuilder, Arena, ExtensionOptions, Options, Plugins};
 use leptos::{either::Either, logging::log, prelude::*};
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
@@ -60,21 +63,26 @@ pub fn App() -> impl IntoView {
         <Stylesheet id="leptos" href="/pkg/news.css" />
         <Router>
             <header>
-                <span class="lambda-home".to_string()>
-                    <A href="/">
-                        <span class="lambda-icon".to_string()>λ</span>
-                        <span class="lambda-text".to_string()>{LAMBDA_FUNCTION}</span>
-                    </A>
-                </span>
-                <span class="spacer".to_string()></span>
-                <A href="/story/create">"New"</A>
+                <ul>
+                    <li>
+                        <span class="lambda-home".to_string()>
+                            <A href="/">
+                                <span class="lambda-icon".to_string()>λ</span>
+                                <span class="lambda-text".to_string()>{LAMBDA_FUNCTION}</span>
+                            </A>
+                        </span>
+                    </li>
+                    <li class="spacer".to_string()>
+                        <span></span>
+                    </li>
+                    <li>
+                        <A href="/story/create">"New"</A>
+                    </li>
+                </ul>
             </header>
             <Routes fallback=NotFound>
                 <Route path=StaticSegment("") view=StoryList />
-                <Route
-                    path=(StaticSegment("story"), StaticSegment("create"))
-                    view=StoryCreate
-                />
+                <Route path=(StaticSegment("story"), StaticSegment("create")) view=StoryCreate />
                 <Route
                     path=(StaticSegment("story"), ParamSegment("id"))
                     view=StoryDetail
@@ -135,16 +143,13 @@ fn StoryDetail() -> impl IntoView {
                     view! {
                         {match story {
                             Ok(Story { title, text, id, .. }) => {
+                                let text = text.unwrap_or_default();
+                                let title_and_text = format!("{title}\n==================\n{text}");
                                 Either::Left(
                                     view! {
                                         <Title text=format!("{} :: {}", title, LAMBDA_FUNCTION) />
                                         <main>
-                                            <h1>{title}</h1>
-                                            {text.and_then(|text| Some(
-                                                text.lines()
-                                                    .map(|line| line.to_owned())
-                                                    .map(|line| view! {<p>{line}</p>}).collect_view()
-                                            ))}
+                                            <Markdown text=title_and_text />
                                         </main>
                                         <CommentCreate
                                             story_id=id
@@ -243,9 +248,7 @@ fn RelativeTime(from: DateTime<FixedOffset>) -> impl IntoView {
         let duration = from.signed_duration_since(now.get());
         HumanTime::from(duration).to_string()
     };
-    view! {
-        <span title=from.to_string()>{human_time}</span>
-    }
+    view! { <span title=from.to_string()>{human_time}</span> }
 }
 
 #[component]
@@ -342,4 +345,43 @@ fn CommentDetail(comment: Comment) -> impl IntoView {
             </div>
         </li>
     }
+}
+
+#[component]
+fn Markdown(text: String) -> impl IntoView {
+    let html = Memo::new(move |_| {
+        let arena = Arena::new();
+
+        let extension = ExtensionOptions::builder()
+            .alerts(true)
+            .table(true)
+            .underline(true)
+            .build();
+
+        let options = Options {
+            extension,
+            ..Options::default()
+        };
+
+        let syntect = SyntectAdapterBuilder::new().theme("Solarized (light)").build();
+        let mut plugins = Plugins::default();
+
+        plugins.render.codefence_syntax_highlighter = Some(&syntect);
+
+        
+        let root = parse_document(&arena, &text, &options);
+
+
+        for node in root.children() {
+            if let NodeValue::Heading(ref mut heading) = node.data.borrow_mut().value {
+                heading.level = min(heading.level + 3, 6);
+            }
+        }
+
+        let mut html = vec![];
+        format_html_with_plugins(root, &options,  &mut html, &plugins).unwrap();
+
+        String::from_utf8(html).unwrap()
+    });
+    view! { <div inner_html=html /> }
 }

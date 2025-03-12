@@ -12,5 +12,3 @@ CREATE TABLE stories (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
   author_id INTEGER NOT NULL REFERENCES users(id)
 );
-
-INSERT INTO users (display_name) VALUES ('LambdaFunction');
