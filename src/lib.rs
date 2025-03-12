@@ -1,7 +1,7 @@
-#![feature(try_blocks)]
-
 pub mod api;
 pub mod app;
+pub mod constants;
+pub mod features;
 pub mod model;
 
 #[cfg(feature = "hydrate")]

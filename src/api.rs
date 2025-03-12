@@ -1,17 +1,33 @@
-use crate::model::{Comment, CommentCreateArgs, Story, StoryCreateArgs, StoryListItem};
+use crate::{
+    constants::PAGE_SIZE,
+    model::{Comment, CommentCreateArgs, Story, StoryCreateArgs, StoryListItem},
+};
 use leptos::prelude::*;
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
+    use crate::model::Comment;
+    use chrono::{DateTime, Local};
     use leptos::prelude::*;
     use sqlx::PgPool;
+    use sqlx::postgres::PgRow;
+    use sqlx::Row;
 
     pub fn pool() -> Result<PgPool, ServerFnError> {
         use_context::<PgPool>().ok_or_else(|| ServerFnError::ServerError("Pool missing.".into()))
     }
-}
 
-const PAGE_SIZE: i64 = 32;
+    pub fn row_to_comment(row: PgRow) -> Comment {
+        Comment {
+            id: row.get("id"),
+            text: row.get("text"),
+            parent_id: row.get("parent_id"),
+            story_id: row.get("story_id"),
+            created_at: row.get::<DateTime<Local>, _>("created_at").into(),
+            author_name: row.get("author_name"),
+        }
+    }
+}
 
 #[server]
 pub async fn story_list(page: Option<i64>) -> Result<Vec<StoryListItem>, ServerFnError> {
@@ -65,8 +81,8 @@ pub async fn story_create(story: StoryCreateArgs) -> Result<Story, ServerFnError
         return Err(ServerFnError::ServerError("Title is required.".into()));
     }
 
-    if story.text.clone().is_none_or(|text| text.is_empty())
-        && story.url.clone().is_none_or(|url| url.is_empty())
+    if story.text.as_deref().map_or(true, str::is_empty)
+        && story.url.as_deref().map_or(true, str::is_empty)
     {
         return Err(ServerFnError::ServerError(
             "Text or URL is required.".into(),
@@ -166,7 +182,7 @@ pub async fn comment_list(story_id: i32) -> Result<Vec<Comment>, ServerFnError> 
 
 #[server]
 pub async fn comment_with_parents(comment_id: i32) -> Result<Vec<Comment>, ServerFnError> {
-    use self::ssr::pool;
+    use self::ssr::{pool, row_to_comment};
     use chrono::{DateTime, FixedOffset, Utc};
     use sqlx::{postgres::PgRow, query, Row};
 
@@ -217,14 +233,7 @@ pub async fn comment_with_parents(comment_id: i32) -> Result<Vec<Comment>, Serve
 
     let comments = rows
         .into_iter()
-        .map(|row: PgRow| Comment {
-            id: row.get("id"),
-            text: row.get("text"),
-            parent_id: row.get("parent_id"),
-            story_id: row.get("story_id"),
-            created_at: row.get::<DateTime<Utc>, _>("created_at").into(),
-            author_name: row.get("author_name"),
-        })
+        .map(row_to_comment)
         .collect();
 
     Ok(comments)

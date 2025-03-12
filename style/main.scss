@@ -60,6 +60,7 @@ a {
 }
 
 form {
+  max-width: 60ch;
   &, & label {
     display: flex;
     flex-direction: column;
@@ -74,6 +75,48 @@ form {
   }
   
 }
+
+table {
+  border-collapse: collapse;
+  white-space: nowrap;
+  caption {
+    text-align: start;
+    font-weight: 600;
+    padding-inline-start: bs(0.2);
+  }
+}
+th,
+td {
+  padding: bs(0.2) bs(0.4);
+  font-weight: 400;
+  text-align: start;
+  :first-of-type {
+    text-align: end;
+  }
+}
+thead,
+tfoot {
+  th {
+    font-weight: 500;
+  }
+}
+thead th {
+  border-bottom: bs(0.1) solid currentColor;
+}
+tfoot th {
+  border-top: bs(0.1) solid currentColor;
+}
+
+pre {
+  padding: bs(0.2) bs(0.4);
+}
+
+
+blockquote {
+  border-left: 4px solid currentColor;
+  padding-left: bs(0.4);
+}
+
 .lambda-home {
   font-size: 24px;
   a::after {
@@ -155,13 +198,13 @@ ol {
   gap: 8px;
 }
 
-.stories, .comments {
+.binding, .effects {
   li > div:nth-of-type(2) {
     font-size: bs(0.55);
   }
 }
 
-.comments {
+.effects {
   li {
     list-style: none;
   }

@@ -1,8 +1,8 @@
-# Lambda Function News Project
+# λ Lambda Function • A Type-Safe Space
 
 [![Lint](https://github.com/actualwitch/news/actions/workflows/lint.yml/badge.svg)](https://github.com/actualwitch/news/actions/workflows/lint.yml)
 
-This is a WIP source code for a collaborative link aggregator similar to [lobste.rs](https://lobste.rs/), but actually written in Rust.
+Lambda Function is a love letter to nerds everywhere; and a desperate plea for unification, before we are all divided and conquered. It is a celebration of functional programming and mathematics, science and art, humanity and its creations. But above all else, Lambda Function is you. It is all of us, together.
 
 ## Development
 
@@ -14,8 +14,10 @@ tilt up
 
 ## Roadmap
 
-- [ ] Read-only links with imaginary discussions
 - [x] Postgres based data store
+- [ ] Tree comment rendering
+- [ ] Auth
+- [ ] Moderation
 - [ ] Kubernetes deployment
 - [ ] ActivityPub/RSS read-only feed
 - [ ] ActivityPub interaction support

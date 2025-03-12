@@ -57,11 +57,10 @@ async fn main() {
     let pool = PgPool::connect(database_url)
         .await
         .expect("Failed to create Postgres pool");
-
+    
     if let Err(e) = sqlx::migrate!().run(&pool).await {
-        eprintln!("{e:?}");
-    } else {
-        log!("Migrations complete.");
+        log!("Migration failed: {:?}", e);
+        std::process::exit(1);
     }
 
     global::set_text_map_propagator(TraceContextPropagator::new());
