@@ -37,7 +37,8 @@ thiserror = "2.0.11"
 chrono-humanize = "0.2.3"
 leptos-use = "0.15.6"
 web-sys = "0.3.77"
-comrak = {version = "0.36.0", features = [ "syntect" ]}
+comrak = { version = "0.36.0", features = [ "syntect" ]}
+validator = { version = "0.20.0", features = ["derive"] }
 
 [features]
 hydrate = ["leptos/hydrate", "dep:console_error_panic_hook", "dep:wasm-bindgen"]

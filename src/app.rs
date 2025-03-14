@@ -1,7 +1,7 @@
 use std::cmp::min;
 
 use crate::{
-    api::*, constants::{LAMBDA, LAMBDA_FUNCTION, LOADING, NEW, STORY, PROFILE}, features::{chrono::{provide_now, RelativeTime}, ui::markdown::*, utils::pluralize}, model::{Comment, Story, StoryGetArgs, StoryListItem}
+    api::*, constants::{LAMBDA, LAMBDA_FUNCTION, LOADING, NEW, PROFILE, STORY, TITLE_ERROR}, features::{chrono::{provide_now, RelativeTime}, ui::markdown::*, utils::pluralize}, model::{Comment, Story, StoryGetArgs, StoryListItem}
 };
 use chrono::{DateTime, FixedOffset, Local};
 use chrono_humanize::HumanTime;
@@ -210,13 +210,17 @@ fn StoryCreate() -> impl IntoView {
 
     let error = move || match value.get() {
         Some(Err(e)) => Some(view! {
-            <p class="error"
-                .to_string()>
-                {match e {
-                    ServerFnError::ServerError(e) => e.to_string(),
-                    _ => "An error occurred.".to_string(),
-                }}
-            </p>
+            <article class="error">
+                <h4>
+                    {TITLE_ERROR}
+                </h4>
+                <p>
+                    {match e {
+                        ServerFnError::ServerError(e) => e.to_string(),
+                        _ => "An error occurred.".to_string(),
+                    }}
+                </p>
+            </article>
         }),
         _ => None,
     };
@@ -297,8 +301,8 @@ fn CommentCreate(
     view! {
         <ActionForm action=submit>
             <label>
-                <span>Compose yourself</span>
-                <textarea name="comment[text]" node_ref=input_element></textarea>
+                <span>Text</span>
+                <textarea name="comment[text]" placeholder="Compose yourself" node_ref=input_element></textarea>
             </label>
             <input type="hidden" name="comment[story_id]" value=story_id />
             <input type="hidden" name="comment[parent_id]" value=parent_id />

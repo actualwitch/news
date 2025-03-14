@@ -1,8 +1,9 @@
 use crate::{
     constants::PAGE_SIZE,
-    model::{Comment, CommentCreateArgs, Story, StoryCreateArgs, StoryListItem},
+    model::{Comment, CommentCreateArgs, LambdaError, Story, StoryCreateArgs, StoryListItem},
 };
 use leptos::prelude::*;
+use validator::Validate;
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
@@ -77,17 +78,7 @@ pub async fn story_create(story: StoryCreateArgs) -> Result<Story, ServerFnError
     let pool = pool()?;
     let timestamp = Local::now();
 
-    if story.title.is_empty() {
-        return Err(ServerFnError::ServerError("Title is required.".into()));
-    }
-
-    if story.text.as_deref().map_or(true, str::is_empty)
-        && story.url.as_deref().map_or(true, str::is_empty)
-    {
-        return Err(ServerFnError::ServerError(
-            "Text or URL is required.".into(),
-        ));
-    }
+    story.validate().map_err(|err| LambdaError::ValidationError(err.to_string()))?;
 
     let result = query_as!(Story, r#"INSERT INTO stories (title, text, url, author_id, created_at) VALUES ($1, $2, $3, $4, $5) RETURNING *"#, story.title, story.text, story.url, 1, timestamp.into())
         .fetch_one(&pool)

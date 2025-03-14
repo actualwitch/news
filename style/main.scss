@@ -1,12 +1,19 @@
 @use "reset";
-@import 'shevy';
+@import "shevy";
 
 @include headings;
 @include body;
 @include content;
 
 $shevy: (
-  base-font-scale: (1.802, 1.602, 1.424, 1.266, 1.125, 1)
+  base-font-scale: (
+    1.802,
+    1.602,
+    1.424,
+    1.266,
+    1.125,
+    1,
+  ),
 );
 
 body {
@@ -24,7 +31,7 @@ body {
     align-items: center;
     gap: 8px;
     border-right: 4px solid green;
-  
+
     margin-bottom: bs(0.35);
     padding: 0;
     padding-right: 8px;
@@ -37,14 +44,14 @@ body {
 }
 
 main {
-//   h1 {
-//     font-size: 1.75em;
-//     font-weight: 300;
-//     margin-bottom: 0.4em;
-//   }
-//   p {
-//     margin-bottom: 0.5em;
-//   }
+  //   h1 {
+  //     font-size: 1.75em;
+  //     font-weight: 300;
+  //     margin-bottom: 0.4em;
+  //   }
+  //   p {
+  //     margin-bottom: 0.5em;
+  //   }
 }
 
 a {
@@ -61,7 +68,8 @@ a {
 
 form {
   max-width: 60ch;
-  &, & label {
+  &,
+  & label {
     display: flex;
     flex-direction: column;
   }
@@ -73,7 +81,6 @@ form {
   button {
     margin-top: bs();
   }
-  
 }
 
 table {
@@ -110,7 +117,6 @@ tfoot th {
 pre {
   padding: bs(0.2) bs(0.4);
 }
-
 
 blockquote {
   border-left: 4px solid currentColor;
@@ -185,7 +191,15 @@ ol {
 .error {
   color: red;
   border-left: 4px solid red;
-  padding: 4px 8px;
+  padding: 4px 14px;
+
+  h4 {
+    font-weight: 200;
+    margin-bottom: 0.2em;
+  }
+  p {
+    margin-bottom: 0.6em;
+  }
 }
 
 .success {
@@ -198,7 +212,8 @@ ol {
   gap: 8px;
 }
 
-.binding, .effects {
+.binding,
+.effects {
   li > div:nth-of-type(2) {
     font-size: bs(0.55);
   }
