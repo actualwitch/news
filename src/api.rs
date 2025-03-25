@@ -5,34 +5,9 @@ use crate::{
 use leptos::prelude::*;
 use validator::Validate;
 
-#[cfg(feature = "ssr")]
-pub mod ssr {
-    use crate::model::Comment;
-    use chrono::{DateTime, Local};
-    use leptos::prelude::*;
-    use sqlx::PgPool;
-    use sqlx::postgres::PgRow;
-    use sqlx::Row;
-
-    pub fn pool() -> Result<PgPool, ServerFnError> {
-        use_context::<PgPool>().ok_or_else(|| ServerFnError::ServerError("Pool missing.".into()))
-    }
-
-    pub fn row_to_comment(row: PgRow) -> Comment {
-        Comment {
-            id: row.get("id"),
-            text: row.get("text"),
-            parent_id: row.get("parent_id"),
-            story_id: row.get("story_id"),
-            created_at: row.get::<DateTime<Local>, _>("created_at").into(),
-            author_name: row.get("author_name"),
-        }
-    }
-}
-
 #[server]
 pub async fn story_list(page: Option<i64>) -> Result<Vec<StoryListItem>, ServerFnError> {
-    use self::ssr::pool;
+    use crate::server::pool;
     use sqlx::query_as;
 
     let pool = pool()?;
@@ -71,7 +46,7 @@ pub async fn story_list(page: Option<i64>) -> Result<Vec<StoryListItem>, ServerF
 
 #[server]
 pub async fn story_create(story: StoryCreateArgs) -> Result<Story, ServerFnError> {
-    use self::ssr::pool;
+    use crate::server::pool;
     use chrono::Local;
     use sqlx::query_as;
 
@@ -89,7 +64,7 @@ pub async fn story_create(story: StoryCreateArgs) -> Result<Story, ServerFnError
 
 #[server]
 pub async fn story_get(id: i32) -> Result<Story, ServerFnError> {
-    use self::ssr::pool;
+    use crate::server::pool;
     use sqlx::query_as;
 
     let pool = pool()?;
@@ -103,7 +78,7 @@ pub async fn story_get(id: i32) -> Result<Story, ServerFnError> {
 
 #[server]
 pub async fn get_story_page_count() -> Result<i64, ServerFnError> {
-    use self::ssr::pool;
+    use crate::server::pool;
     use sqlx::query;
 
     let pool = pool()?;
@@ -120,7 +95,7 @@ pub async fn get_story_page_count() -> Result<i64, ServerFnError> {
 
 #[server]
 pub async fn comment_create(comment: CommentCreateArgs) -> Result<(), ServerFnError> {
-    use self::ssr::pool;
+    use crate::server::pool;
     use chrono::Local;
     use sqlx::query;
 
@@ -143,7 +118,7 @@ pub async fn comment_create(comment: CommentCreateArgs) -> Result<(), ServerFnEr
 
 #[server]
 pub async fn comment_list(story_id: i32) -> Result<Vec<Comment>, ServerFnError> {
-    use self::ssr::pool;
+    use crate::server::pool;
     use sqlx::query_as;
 
     let pool = pool()?;
@@ -173,7 +148,7 @@ pub async fn comment_list(story_id: i32) -> Result<Vec<Comment>, ServerFnError> 
 
 #[server]
 pub async fn comment_with_parents(comment_id: i32) -> Result<Vec<Comment>, ServerFnError> {
-    use self::ssr::{pool, row_to_comment};
+    use crate::server::{pool, row_to_comment};
     use chrono::{DateTime, FixedOffset, Utc};
     use sqlx::{postgres::PgRow, query, Row};
 

@@ -4,6 +4,9 @@ pub mod constants;
 pub mod features;
 pub mod model;
 
+#[cfg(feature = "ssr")]
+pub mod server;
+
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub fn hydrate() {

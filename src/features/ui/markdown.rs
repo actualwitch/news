@@ -6,6 +6,7 @@ use comrak::{
 use leptos::prelude::*;
 use std::cmp::min;
 
+
 #[component]
 pub fn Markdown(text: String) -> impl IntoView {
     let html = Memo::new(move |_| {
